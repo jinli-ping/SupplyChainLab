@@ -20,6 +20,16 @@
 
 ---
 
+## 📸 界面预览
+
+<p align="center">
+  <img src="docs/1-forecast.png" width="32%" alt="需求预测">
+  <img src="docs/2-safety.png" width="32%" alt="安全库存">
+  <img src="docs/3-bullwhip.png" width="32%" alt="牛鞭效应">
+</p>
+
+---
+
 ## 🚀 立即体验
 
 | 入口 | 地址 |
