@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>供应链智算 — SupplyChainLab</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --primary: #00695C; --primary-light: #00897B; --accent: #FF6F00;
+  --bg: #f5f7f4; --card: #fff; --text: #212121; --muted: #757575;
+  --success: #2E7D32; --warning: #E65100; --danger: #C62828;
+  --border: #e0e0e0; --shadow: 0 2px 12px rgba(0,0,0,.06); --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Microsoft YaHei','PingFang SC',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+.header { background: linear-gradient(135deg, #004D40 0%, var(--primary) 50%, var(--primary-light) 100%); color:#fff; padding: 26px 36px; position: relative; overflow: hidden; }
+.header::after { content:''; position:absolute; right:-30px; top:-30px; width:160px; height:160px; border-radius:50%; background: rgba(255,255,255,.04); }
+.header h1 { font-size: 24px; font-weight: 700; position: relative; z-index:1; }
+.header p { font-size: 13px; opacity:.75; margin-top:4px; position:relative; z-index:1; }
+.nav { display:flex; background: var(--primary); padding:0 36px; position: sticky; top:0; z-index:10; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.nav button { background: none; border: none; color: rgba(255,255,255,.6); padding: 14px 24px; font-size: 14px; cursor:pointer; border-bottom: 3px solid transparent; transition: all .2s; font-family: inherit; }
+.nav button:hover { color:#fff; background: rgba(255,255,255,.05); }
+.nav button.active { color:#fff; border-bottom-color: var(--accent); }
+.main { max-width: 1240px; margin: 0 auto; padding: 24px 32px 40px; }
+.tab { display: none; animation: fadeIn .3s ease; }
+.tab.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.card { background: var(--card); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); border: 1px solid #f0f0f0; transition: transform .2s; }
+.card:hover { transform: translateY(-2px); }
+.card .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.card .value { font-size: 28px; font-weight: 700; line-height: 1.1; }
+.card .sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+.panel { background: var(--card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: 1px solid #f0f0f0; }
+.panel h3 { font-size: 15px; color: var(--primary); margin-bottom: 14px; border-left: 3px solid var(--accent); padding-left: 10px; }
+canvas { max-height: 310px; }
+.btn { padding: 8px 18px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit; transition: all .2s; font-weight: 500; display: inline-flex; align-items: center; gap: 5px; }
+.btn-primary { background: var(--primary); color:#fff; }
+.btn-primary:hover { background: var(--primary-light); }
+.btn-outline { background: #fff; color: var(--primary); border: 1.5px solid var(--primary); }
+.btn-outline:hover { background: #f0f9f7; }
+.btn-danger { background: #fff; color: var(--danger); border: 1.5px solid var(--danger); }
+.btn-danger:hover { background: #fff5f5; }
+.btn-sm { padding: 4px 10px; font-size: 11px; border-radius: 4px; }
+input, select { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; }
+input:focus, select:focus { outline: none; border-color: var(--primary); }
+table { width:100%; border-collapse: collapse; font-size: 13px; border-radius: 8px; overflow: hidden; }
+th { background: var(--primary); color:#fff; padding: 11px 14px; text-align: left; font-weight: 600; font-size: 12px; }
+td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+tr:hover td { background: #f5f9f7; }
+tr:last-child td { border-bottom: none; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-red { background: #ffebee; color: var(--danger); }
+.badge-yellow { background: #fff3e0; color: var(--warning); }
+.badge-green { background: #e8f5e9; color: var(--success); }
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; padding: 14px 18px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid #f0f0f0; }
+.toolbar .sep { flex:1; }
+.toolbar .hint { font-size: 11px; color: var(--muted); }
+.w-full { grid-column: 1 / -1; }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+.footer { text-align: center; padding: 16px; color: var(--muted); font-size: 11px; }
+@media (max-width: 768px) { .row { grid-template-columns: 1fr; } .nav button { padding: 12px 14px; font-size: 12px; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📐 供应链智算 — SupplyChainLab</h1>
+  <p>需求预测 · 安全库存 · 牛鞭效应模拟 &nbsp;|&nbsp; 数据本地存储</p>
+</div>
+
+<div class="nav">
+  <button class="active" onclick="switchTab('forecast')">📈 需求预测</button>
+  <button onclick="switchTab('safety')">🛡️ 安全库存</button>
+  <button onclick="switchTab('bullwhip')">🌊 牛鞭效应</button>
+</div>
+
+<div class="main">
+
+<!-- ====== TAB 1: 需求预测 ====== -->
+<div id="tab-forecast" class="tab active">
+  <div class="toolbar">
+    <button class="btn btn-outline" onclick="loadDemoForecast()">📥 演示数据</button>
+    <label class="btn btn-outline" style="cursor:pointer;">📁 导入 CSV <input type="file" accept=".csv" onchange="handleFcCSV(this)" style="display:none"></label>
+    <span class="sep"></span>
+    <select id="fcMethod" onchange="renderForecast()">
+      <option value="ma3">3 月移动平均</option>
+      <option value="ma5">5 月移动平均</option>
+      <option value="ses">指数平滑 (α=0.3)</option>
+    </select>
+    <span class="hint">CSV: 月份,销量</span>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="label">下月预测销量</div><div class="value" id="fc-next" style="color:#00695C;">--</div></div>
+    <div class="card"><div class="label">趋势方向</div><div class="value" id="fc-trend">--</div></div>
+    <div class="card"><div class="label">MAD 误差</div><div class="value" id="fc-mad">--</div><div class="sub">越小越准</div></div>
+    <div class="card"><div class="label">历史均值</div><div class="value" id="fc-avg">--</div></div>
+  </div>
+
+  <div class="row">
+    <div class="panel"><h3>📈 历史销量 & 预测</h3><canvas id="chartFcMain"></canvas></div>
+    <div class="panel"><h3>📊 预测误差分析</h3><canvas id="chartFcError"></canvas></div>
+  </div>
+
+  <div class="panel w-full"><h3>📋 数据明细</h3><div style="overflow-x:auto;"><table id="fcTable"><thead><tr><th>月份</th><th>实际销量</th><th>预测值</th><th>误差</th><th>误差率</th></tr></thead><tbody></tbody></table></div></div>
+</div>
+
+<!-- ====== TAB 2: 安全库存 ====== -->
+<div id="tab-safety" class="tab">
+  <div class="toolbar">
+    <span>日均需求均值</span><input id="ss-dmean" type="number" value="100" style="width:80px">
+    <span>日需求标准差</span><input id="ss-dstd" type="number" value="20" style="width:80px">
+    <span>提前期(天)</span><input id="ss-lead" type="number" value="7" style="width:70px">
+    <span>服务水平</span>
+    <select id="ss-level" onchange="renderSafety()">
+      <option value="90">90%</option>
+      <option value="95" selected>95%</option>
+      <option value="99">99%</option>
+    </select>
+    <button class="btn btn-primary" onclick="renderSafety()">🔄 计算</button>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="label">安全库存量</div><div class="value" id="ss-value" style="color:#00695C;">--</div><div class="sub">件</div></div>
+    <div class="card"><div class="label">再订货点</div><div class="value" id="ss-rop">--</div><div class="sub">ROP = d̄ × L + SS</div></div>
+    <div class="card"><div class="label">Z 值</div><div class="value" id="ss-z">--</div><div class="sub">Z(95%) = 1.645</div></div>
+    <div class="card"><div class="label">覆盖天数</div><div class="value" id="ss-days">--</div><div class="sub">天</div></div>
+  </div>
+
+  <div class="row">
+    <div class="panel"><h3>📊 库存水平模拟</h3><canvas id="chartSsSim"></canvas></div>
+    <div class="panel"><h3>📐 服务水平 vs 安全库存</h3><canvas id="chartSsTradeoff"></canvas></div>
+  </div>
+
+  <div class="panel w-full"><h3>📋 不同服务水平对比</h3><table id="ssTable"><thead><tr><th>服务水平</th><th>Z 值</th><th>安全库存(件)</th><th>再订货点(件)</th><th>库存成本指数</th></tr></thead><tbody></tbody></table></div>
+</div>
+
+<!-- ====== TAB 3: 牛鞭效应 ====== -->
+<div id="tab-bullwhip" class="tab">
+  <div class="toolbar">
+    <span>需求模式</span>
+    <select id="bw-pattern" onchange="renderBullwhip()">
+      <option value="constant">恒定 (100)</option>
+      <option value="variable" selected>波动 (±30)</option>
+      <option value="spike">突发尖峰</option>
+    </select>
+    <span>模拟周期</span><input id="bw-periods" type="number" value="20" style="width:70px">
+    <span>提前期</span><input id="bw-lead" type="number" value="2" style="width:70px">
+    <button class="btn btn-primary" onclick="renderBullwhip()">🔄 模拟</button>
+    <span class="sep"></span>
+    <button class="btn btn-outline btn-sm" onclick="renderBullwhip()">重新运行</button>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="label">牛鞭强度</div><div class="value" id="bw-amp" style="color:#E65100;">--</div><div class="sub">制造商方差 / 零售方差</div></div>
+    <div class="card"><div class="label">零售商波动</div><div class="value" id="bw-ret" style="color:#2E7D32;">--</div><div class="sub">订单量标准差</div></div>
+    <div class="card"><div class="label">制造商波动</div><div class="value" id="bw-mfr" style="color:#C62828;">--</div><div class="sub">订单量标准差</div></div>
+    <div class="card"><div class="label">效应评级</div><div class="value" id="bw-grade">--</div></div>
+  </div>
+
+  <div class="row">
+    <div class="panel"><h3>🌊 四级供应链订单量</h3><canvas id="chartBwOrders"></canvas></div>
+    <div class="panel"><h3>📉 波动放大倍数</h3><canvas id="chartBwAmp"></canvas></div>
+  </div>
+
+  <div class="panel w-full"><h3>📋 逐期订单明细</h3><div style="overflow-x:auto;"><table id="bwTable"><thead><tr><th>周期</th><th>市场需求</th><th>零售商</th><th>批发商</th><th>分销商</th><th>制造商</th></tr></thead><tbody></tbody></table></div></div>
+</div>
+
+<div class="footer">供应链智算 · SupplyChainLab · 湖北第二师范学院 经济与管理学院</div>
+</div>
+
+<script>
+// ====== DATA ======
+let fcData = [];
+let chartFcMain, chartFcError, chartSsSim, chartSsTradeoff, chartBwOrders, chartBwAmp;
+
+// ====== PERSISTENCE ======
+const SK = 'supplychain_data';
+function load() { try { const d = JSON.parse(localStorage[SK]); fcData = d.fc || []; } catch(e) {} }
+function save() { localStorage[SK] = JSON.stringify({ fc: fcData }); }
+
+// ====== TAB SWITCH ======
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'forecast') renderForecast();
+  if (name === 'safety') renderSafety();
+  if (name === 'bullwhip') renderBullwhip();
+}
+
+// ====== TAB 1: DEMAND FORECAST ======
+function loadDemoForecast() {
+  fcData = [
+    { month: '1月', sales: 120 }, { month: '2月', sales: 132 }, { month: '3月', sales: 145 },
+    { month: '4月', sales: 138 }, { month: '5月', sales: 155 }, { month: '6月', sales: 160 },
+    { month: '7月', sales: 148 }, { month: '8月', sales: 172 }, { month: '9月', sales: 165 },
+    { month: '10月', sales: 180 }, { month: '11月', sales: 190 }, { month: '12月', sales: 185 },
+  ];
+  save(); renderForecast();
+}
+
+function handleFcCSV(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    fcData = [];
+    e.target.result.split('\n').filter(l => l.trim()).slice(1).forEach(l => {
+      const c = l.split(',');
+      if (c.length >= 2 && !isNaN(parseInt(c[1]))) fcData.push({ month: c[0].trim(), sales: parseInt(c[1]) });
+    });
+    save(); renderForecast();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function renderForecast() {
+  if (!fcData.length) { loadDemoForecast(); return; }
+  const sales = fcData.map(r => r.sales);
+  const method = document.getElementById('fcMethod').value;
+  let forecasts = [], errors = [];
+
+  for (let i = 0; i < sales.length; i++) {
+    let f;
+    if (method === 'ma3') {
+      f = i < 3 ? null : (sales[i-1] + sales[i-2] + sales[i-3]) / 3;
+    } else if (method === 'ma5') {
+      f = i < 5 ? null : (sales[i-1] + sales[i-2] + sales[i-3] + sales[i-4] + sales[i-5]) / 5;
+    } else { // SES α=0.3
+      if (i === 0) f = sales[0];
+      else f = 0.3 * sales[i-1] + 0.7 * (forecasts[i-1] || sales[i-1]);
+    }
+    forecasts.push(f);
+    errors.push(f !== null ? Math.abs(sales[i] - f) : null);
+  }
+
+  // Next forecast
+  let nextF;
+  if (method === 'ma3') nextF = (sales[sales.length-1] + sales[sales.length-2] + sales[sales.length-3]) / 3;
+  else if (method === 'ma5') nextF = (sales[sales.length-1] + sales[sales.length-2] + sales[sales.length-3] + sales[sales.length-4] + sales[sales.length-5]) / 3;
+  else nextF = 0.3 * sales[sales.length-1] + 0.7 * (forecasts[forecasts.length-1] || sales[sales.length-1]);
+
+  const validErrs = errors.filter(e => e !== null);
+  const MAD = validErrs.length ? (validErrs.reduce((a,b)=>a+b,0) / validErrs.length).toFixed(1) : '--';
+  const avg = (sales.reduce((a,b)=>a+b,0) / sales.length).toFixed(0);
+  const trend = nextF > avg ? '📈 上升' : nextF < avg * 0.95 ? '📉 下降' : '➡️ 平稳';
+
+  document.getElementById('fc-next').textContent = Math.round(nextF);
+  document.getElementById('fc-trend').textContent = trend;
+  document.getElementById('fc-mad').textContent = MAD;
+  document.getElementById('fc-avg').textContent = avg;
+
+  // Chart: actual + forecast
+  const ctx1 = document.getElementById('chartFcMain').getContext('2d');
+  if (chartFcMain) chartFcMain.destroy();
+  chartFcMain = new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: fcData.map(r => r.month),
+      datasets: [
+        { label: '实际销量', data: sales, borderColor: '#00695C', backgroundColor: 'transparent', tension: 0.3, pointRadius: 3 },
+        { label: '预测值', data: forecasts.map((f,i) => f !== null ? f : null), borderColor: '#FF6F00', borderDash: [4,4], backgroundColor: 'transparent', tension: 0.3, pointRadius: 2 },
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { grid: { color: '#f0f0f0' } } } }
+  });
+
+  // Error chart
+  const ctx2 = document.getElementById('chartFcError').getContext('2d');
+  if (chartFcError) chartFcError.destroy();
+  chartFcError = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: fcData.map(r => r.month),
+      datasets: [{ label: '绝对误差', data: errors.map(e => e || 0), backgroundColor: '#FF6F0060', borderRadius: 4 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  // Table
+  let html = '';
+  fcData.forEach((r, i) => {
+    const fv = forecasts[i]; const err = errors[i];
+    html += `<tr><td>${r.month}</td><td><b>${r.sales}</b></td><td>${fv !== null ? Math.round(fv) : '-'}</td>
+      <td>${err !== null ? Math.round(err) : '-'}</td><td>${err !== null && r.sales ? (err/r.sales*100).toFixed(1)+'%' : '-'}</td></tr>`;
+  });
+  document.querySelector('#fcTable tbody').innerHTML = html;
+}
+
+// ====== TAB 2: SAFETY STOCK ======
+function renderSafety() {
+  const dMean = parseFloat(document.getElementById('ss-dmean').value) || 100;
+  const dStd = parseFloat(document.getElementById('ss-dstd').value) || 20;
+  const lead = parseFloat(document.getElementById('ss-lead').value) || 7;
+  const level = parseFloat(document.getElementById('ss-level').value) / 100;
+
+  // Z values
+  const zMap = { 0.90: 1.282, 0.95: 1.645, 0.99: 2.326 };
+  const z = zMap[level] || 1.645;
+  const ss = Math.round(z * dStd * Math.sqrt(lead));
+  const rop = Math.round(dMean * lead + ss);
+  const days = Math.round(ss / dMean);
+
+  document.getElementById('ss-value').textContent = ss;
+  document.getElementById('ss-rop').textContent = rop;
+  document.getElementById('ss-z').textContent = z.toFixed(3);
+  document.getElementById('ss-days').textContent = days;
+
+  // Simulation of 30-day inventory
+  const simLabels = []; const simStock = []; let inv = rop;
+  for (let d = 1; d <= 30; d++) {
+    simLabels.push(`d${d}`);
+    let demand = Math.round(dMean + dStd * (Math.random() + Math.random() - 1) * 3);
+    demand = Math.max(0, demand);
+    inv -= demand;
+    if (inv < 0) inv = ss; // emergency order
+    simStock.push(inv);
+  }
+
+  const ctx3 = document.getElementById('chartSsSim').getContext('2d');
+  if (chartSsSim) chartSsSim.destroy();
+  chartSsSim = new Chart(ctx3, {
+    type: 'line',
+    data: {
+      labels: simLabels,
+      datasets: [
+        { label: '库存水平', data: simStock, borderColor: '#00695C', backgroundColor: 'rgba(0,105,92,0.08)', fill: true, tension: 0.2, pointRadius: 0 },
+        { label: '安全库存线', data: Array(30).fill(ss), borderColor: '#E65100', borderDash: [6,3], pointRadius: 0 },
+        { label: '再订货点', data: Array(30).fill(rop), borderColor: '#1976D2', borderDash: [4,4], pointRadius: 0 },
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  // Tradeoff chart
+  const levels = [85, 88, 90, 92, 95, 97, 98, 99, 99.5];
+  const ssVals = levels.map(l => Math.round((zMap[l/100] || 1.645) * dStd * Math.sqrt(lead)));
+  const ctx4 = document.getElementById('chartSsTradeoff').getContext('2d');
+  if (chartSsTradeoff) chartSsTradeoff.destroy();
+  chartSsTradeoff = new Chart(ctx4, {
+    type: 'line',
+    data: {
+      labels: levels.map(l => l + '%'),
+      datasets: [{ label: '安全库存量', data: ssVals, borderColor: '#00695C', backgroundColor: 'rgba(0,105,92,0.1)', fill: true, tension: 0.3, pointRadius: 4 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { title: { display: true, text: '件' } } } }
+  });
+
+  // Table
+  let html = '';
+  const sLevels = [0.90, 0.95, 0.97, 0.98, 0.99];
+  sLevels.forEach(l => {
+    const zl = zMap[l] || 1.645; const ssl = Math.round(zl * dStd * Math.sqrt(lead));
+    const ropl = Math.round(dMean * lead + ssl);
+    const costIdx = Math.round(ssl / (zMap[0.90] * dStd * Math.sqrt(lead)) * 100);
+    html += `<tr><td>${(l*100).toFixed(0)}%</td><td>${zl.toFixed(3)}</td><td>${ssl}</td><td>${ropl}</td><td>${costIdx}</td></tr>`;
+  });
+  document.querySelector('#ssTable tbody').innerHTML = html;
+}
+
+// ====== TAB 3: BULLWHIP EFFECT ======
+function renderBullwhip() {
+  const pattern = document.getElementById('bw-pattern').value;
+  const periods = parseInt(document.getElementById('bw-periods').value) || 20;
+  const lead = parseInt(document.getElementById('bw-lead').value) || 2;
+
+  // Generate customer demand
+  let demand = [];
+  for (let t = 0; t < periods; t++) {
+    if (pattern === 'constant') demand.push(100);
+    else if (pattern === 'variable') demand.push(Math.round(100 + (Math.random() - 0.5) * 60));
+    else demand.push(t === 10 ? 250 : Math.round(100 + (Math.random() - 0.5) * 30));
+  }
+
+  // Simulate 4-stage supply chain with order-up-to policy
+  function simulate(demand, lead, safetyFactor) {
+    const orders = []; let inventory = 100 + safetyFactor * 20;
+    for (let t = 0; t < periods; t++) {
+      inventory -= demand[t];
+      if (inventory < 0) inventory = 0;
+      const target = safetyFactor * 20 + lead * 100;
+      const order = Math.max(0, target - inventory + demand[t]);
+      inventory += order;
+      orders.push(order);
+    }
+    return orders;
+  }
+
+  const retail = simulate(demand, lead, 1);
+  const wholesale = simulate(retail, lead, 1.5);
+  const distributor = simulate(wholesale, lead, 2);
+  const manufacturer = simulate(distributor, lead, 2.5);
+
+  function std(arr) {
+    const m = arr.reduce((a,b)=>a+b,0) / arr.length;
+    return Math.sqrt(arr.reduce((s,x)=>s+(x-m)**2,0) / arr.length);
+  }
+
+  const amp = (std(manufacturer) / std(demand)).toFixed(2);
+  const retStd = std(demand).toFixed(1);
+  const mfrStd = std(manufacturer).toFixed(1);
+  let grade = amp > 3 ? '🔴 严重' : amp > 1.8 ? '🟡 中等' : '🟢 轻微';
+
+  document.getElementById('bw-amp').textContent = amp + '×';
+  document.getElementById('bw-ret').textContent = retStd;
+  document.getElementById('bw-mfr').textContent = mfrStd;
+  document.getElementById('bw-grade').textContent = grade;
+
+  // Orders chart
+  const ctx5 = document.getElementById('chartBwOrders').getContext('2d');
+  if (chartBwOrders) chartBwOrders.destroy();
+  const tLabels = Array.from({length: periods}, (_,i) => i+1);
+  chartBwOrders = new Chart(ctx5, {
+    type: 'line',
+    data: {
+      labels: tLabels,
+      datasets: [
+        { label: '市场需求', data: demand, borderColor: '#2E7D32', tension: 0.3, pointRadius: 1 },
+        { label: '零售商', data: retail, borderColor: '#1976D2', tension: 0.3, pointRadius: 1 },
+        { label: '批发商', data: wholesale, borderColor: '#FF6F00', tension: 0.3, pointRadius: 1, borderDash: [4,4] },
+        { label: '制造商', data: manufacturer, borderColor: '#C62828', tension: 0.3, pointRadius: 1, borderDash: [2,2] },
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  // Amplification bar
+  const stages = ['零售→批发', '批发→分销', '分销→制造'];
+  const amps = [
+    (std(wholesale)/std(retail)).toFixed(2),
+    (std(distributor)/std(wholesale)).toFixed(2),
+    (std(manufacturer)/std(distributor)).toFixed(2)
+  ];
+  const ctx6 = document.getElementById('chartBwAmp').getContext('2d');
+  if (chartBwAmp) chartBwAmp.destroy();
+  chartBwAmp = new Chart(ctx6, {
+    type: 'bar',
+    data: {
+      labels: stages,
+      datasets: [{ label: '放大倍数', data: amps, backgroundColor: ['#FFB74D','#FF8A65','#EF5350'], borderRadius: 4 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  // Table
+  let html = '';
+  for (let t = 0; t < Math.min(periods, 25); t++) {
+    html += `<tr><td>${t+1}</td><td>${demand[t]}</td><td>${retail[t]}</td><td>${wholesale[t]}</td><td>${distributor[t]}</td><td>${manufacturer[t]}</td></tr>`;
+  }
+  document.querySelector('#bwTable tbody').innerHTML = html;
+}
+
+// ====== INIT ======
+load();
+renderForecast();
+</script>
+</body>
+</html>
