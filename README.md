@@ -88,8 +88,10 @@
 
 ```
 SupplyChainLab/
-├── index.html           # 完整应用（单文件）
+├── index.html            # 完整应用（单文件，可直接打开）
+├── 启动SCL.bat            # Windows 一键启动
 ├── README.md
+├── docs/                 # 截图
 └── .gitignore
 ```
 
