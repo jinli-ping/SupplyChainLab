@@ -90,6 +90,7 @@ tr:last-child td { border-bottom: none; }
       <option value="ma5">5 月移动平均</option>
       <option value="ses">指数平滑 (α=0.3)</option>
     </select>
+    <button class="btn btn-outline btn-sm" onclick="exportFcCSV()">📤 导出 CSV</button>
     <span class="hint">CSV: 月份,销量</span>
   </div>
 
@@ -179,15 +180,38 @@ let chartFcMain, chartFcError, chartSsSim, chartSsTradeoff, chartBwOrders, chart
 
 // ====== PERSISTENCE ======
 const SK = 'supplychain_data';
-function load() { try { const d = JSON.parse(localStorage[SK]); fcData = d.fc || []; } catch(e) {} }
-function save() { localStorage[SK] = JSON.stringify({ fc: fcData }); }
+function load() {
+  try {
+    const d = JSON.parse(localStorage[SK]);
+    fcData = d.fc || [];
+    if (d.ss) { document.getElementById('ss-dmean').value = d.ss.dmean || 100; document.getElementById('ss-dstd').value = d.ss.dstd || 20; document.getElementById('ss-lead').value = d.ss.lead || 7; document.getElementById('ss-level').value = d.ss.level || 95; }
+    if (d.bw) { document.getElementById('bw-pattern').value = d.bw.pattern || 'variable'; document.getElementById('bw-periods').value = d.bw.periods || 20; document.getElementById('bw-lead').value = d.bw.lead || 2; }
+  } catch(e) {}
+}
+function save() {
+  localStorage[SK] = JSON.stringify({
+    fc: fcData,
+    ss: { dmean: document.getElementById('ss-dmean').value, dstd: document.getElementById('ss-dstd').value, lead: document.getElementById('ss-lead').value, level: document.getElementById('ss-level').value },
+    bw: { pattern: document.getElementById('bw-pattern').value, periods: document.getElementById('bw-periods').value, lead: document.getElementById('bw-lead').value }
+  });
+}
+
+function downloadCSV(filename, rows) {
+  var BOM = '﻿', csv = BOM;
+  rows.forEach(function(r) { csv += r.join(',') + '\n'; });
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
 
 // ====== TAB SWITCH ======
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  event.target.classList.add('active');
+  var btn = document.querySelector('.nav button[onclick*=\"' + name + '\"]');
+  if (btn) btn.classList.add('active');
   if (name === 'forecast') renderForecast();
   if (name === 'safety') renderSafety();
   if (name === 'bullwhip') renderBullwhip();
@@ -289,6 +313,14 @@ function renderForecast() {
       <td>${err !== null ? Math.round(err) : '-'}</td><td>${err !== null && r.sales ? (err/r.sales*100).toFixed(1)+'%' : '-'}</td></tr>`;
   });
   document.querySelector('#fcTable tbody').innerHTML = html;
+  save();
+}
+
+function exportFcCSV() {
+  if (!fcData.length) return;
+  var rows = [['月份', '销量']];
+  fcData.forEach(function(r) { rows.push([r.month, r.sales]); });
+  downloadCSV('需求预测数据.csv', rows);
 }
 
 // ====== TAB 2: SAFETY STOCK ======
@@ -360,6 +392,7 @@ function renderSafety() {
     html += `<tr><td>${(l*100).toFixed(0)}%</td><td>${zl.toFixed(3)}</td><td>${ssl}</td><td>${ropl}</td><td>${costIdx}</td></tr>`;
   });
   document.querySelector('#ssTable tbody').innerHTML = html;
+  save();
 }
 
 // ====== TAB 3: BULLWHIP EFFECT ======
@@ -452,6 +485,7 @@ function renderBullwhip() {
     html += `<tr><td>${t+1}</td><td>${demand[t]}</td><td>${retail[t]}</td><td>${wholesale[t]}</td><td>${distributor[t]}</td><td>${manufacturer[t]}</td></tr>`;
   }
   document.querySelector('#bwTable tbody').innerHTML = html;
+  save();
 }
 
 // ====== INIT ======
